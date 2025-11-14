@@ -1,1 +1,5 @@
-# final-project-ikt466
+# IKT466 - Final Project
+
+To install all required packages, please run the following command in your terminal:
+
+    pip install -r requirements.txt

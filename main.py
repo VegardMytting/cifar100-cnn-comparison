@@ -150,7 +150,7 @@ def customcnn():
     
   return CustomCNN()
 
-exporters = {
+registry = {
   "Custom CNN": customcnn,
   "ResNet18": resnet18,
   "ResNet34": resnet34,
@@ -165,13 +165,13 @@ exporters = {
 
 model_choice = inquirer.select(
   message="Select a model architecture:",
-  choices=list(exporters.keys()),
+  choices=list(registry.keys()),
 ).execute()
 
 def build_model(name):
-  if name in exporters:
-    return exporters[name]()
-  raise KeyError(f"Model '{name}' not supported.")
+  if name not in registry:
+    raise KeyError(f"Model '{name}' not supported.")
+  return registry[name]()
   
 accuracies = []
 console.print(f"[#e5c07b]![/#e5c07b] Running [#61afef]{RUNS}[/#61afef] training rounds for [#61afef]{model_choice}[/#61afef][white]...[/white]")
@@ -225,5 +225,5 @@ mean_acc = statistics.mean(accuracies)
 std_acc = statistics.stdev(accuracies)
 
 console.print(f"\n[#e5c07b]![/#e5c07b] Accuracies: \t\t{accuracies}")
-console.print(f"[#e5c07b]![/#e5c07b] Mean accuracy: [cyan]\t{mean_acc:.2f}%[/cyan]")
-console.print(f"[#e5c07b]![/#e5c07b] Std deviation: [cyan]\t{std_acc:.2f}[/cyan]")
+console.print(f"[#e5c07b]![/#e5c07b] Mean accuracy: \t{mean_acc:.2f}%")
+console.print(f"[#e5c07b]![/#e5c07b] Std deviation: \t± {std_acc:.2f}")

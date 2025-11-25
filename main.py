@@ -19,14 +19,16 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-EPOCHS = int(inquirer.text(
-  message="Select number of Epochs:",
-  default="50"
+RUNS = int(inquirer.number(
+  message="Select number of Runs:",
+  default=3,
+  min_allowed=2
 ).execute())
 
-RUNS = int(inquirer.text(
-  message="Select number of Runs::",
-  default="3"
+EPOCHS = int(inquirer.number(
+  message="Select number of Epochs:",
+  default=50,
+  min_allowed=1
 ).execute())
 
 console = Console()
@@ -409,7 +411,7 @@ if model_type == "Deep Learning (CNNs)":
       choices=list(cnn_registry.keys()),
     ).execute()
   
-  if model_choice != "Custom CNN":
+  if sleep or model_choice != "Custom CNN":
     use_transfer_learning = inquirer.confirm(
       message="Use transfer learning (pretrained ImageNet weights)?",
       default=True
@@ -428,7 +430,7 @@ if model_type == "Deep Learning (CNNs)":
   ).execute())
   
   if sleep:
-    for model_name in tqdm(cnn_registry.keys(), desc="models"):
+    for model_name in tqdm(cnn_registry.keys(), desc="models", leave=False):
       train_cnn(model_name, optimizer_choice, learning_rate, use_transfer_learning)
   else:
     train_cnn(model_choice, optimizer_choice, learning_rate, use_transfer_learning)

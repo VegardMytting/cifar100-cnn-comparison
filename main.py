@@ -19,6 +19,11 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+console = Console()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+console.print(f"[#e5c07b]![/#e5c07b] Using device: [#61afef]{device}[/#61afef]")
+
 RUNS = int(inquirer.number(
   message="Select number of Runs:",
   default=3,
@@ -31,11 +36,6 @@ EPOCHS = int(inquirer.number(
   min_allowed=1
 ).execute())
 
-console = Console()
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-console.print(f"[#e5c07b]![/#e5c07b] Using device: [#61afef]{device}[/#61afef]")
-
 def set_seed(seed: int):
   torch.manual_seed(seed)
   torch.cuda.manual_seed_all(seed)
@@ -43,35 +43,46 @@ def set_seed(seed: int):
   np.random.seed(seed)
   torch.backends.cudnn.deterministic = True
   torch.backends.cudnn.benchmark = False
+  
+activation_function_registry = {
+  "ReLU": nn.ReLU,
+  "LeakyReLU": nn.LeakyReLU,
+  "GELU": nn.GELU,
+  "Sigmoid": nn.Sigmoid,
+  "Tanh": nn.Tanh,
+  "Softmax": nn.Softmax(dim=1),
+  "Mish": nn.Mish
+}
 
-def custom_cnn():
+def custom_cnn(activation_function = "ReLU"):
   class CustomCNN(nn.Module):
     def __init__(self):
       super().__init__()
+      self.activation_function = activation_function
       
       self.features = nn.Sequential(
         nn.Conv2d(3, 64, 3, padding=1),
         nn.BatchNorm2d(64),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.Conv2d(64, 64, 3, padding=1),
         nn.BatchNorm2d(64),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.MaxPool2d(2, 2),
         
         nn.Conv2d(64, 128, 3, padding=1),
         nn.BatchNorm2d(128),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.Conv2d(128, 128, 3, padding=1),
         nn.BatchNorm2d(128),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.MaxPool2d(2, 2),
         
         nn.Conv2d(128, 256, 3, padding=1),
         nn.BatchNorm2d(256),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.Conv2d(256, 256, 3, padding=1),
         nn.BatchNorm2d(256),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.MaxPool2d(2, 2),
         
         nn.AdaptiveAvgPool2d((1, 1))
@@ -80,7 +91,7 @@ def custom_cnn():
       self.classifier = nn.Sequential(
         nn.Dropout(0.5),
         nn.Linear(256, 512),
-        nn.ReLU(),
+        activation_function_registry[activation_function](),
         nn.Dropout(0.5),
         nn.Linear(512, 100)
       )
@@ -259,14 +270,14 @@ def init_data(mode="Augmentation & Normalize"):
 
 trainset, trainloader, testset, testloader = init_data(mode=preprocessing_mode)
 
-def train_cnn(model_name, optimizer_name, learning_rate, use_transfer_learning):
+def train_cnn(model_name, optimizer_name, learning_rate, use_transfer_learning = False, cnn_activation_function = None):
   accuracies = []
   
   transfer_status = "with transfer learning" if use_transfer_learning else "without transfer learning"
   if model_name != "Custom CNN":
-    console.print(f"[#e5c07b]![/#e5c07b] Running [#61afef]{RUNS}[/#61afef] training rounds for [#61afef]{model_name}[/#61afef] {transfer_status} with [#61afef]{optimizer_name}[/#61afef] ([#61afef]lr[/#61afef]=[#61afef]{learning_rate}[/#61afef])")
+    console.print(f"[#e5c07b]![/#e5c07b] Running [#61afef]{RUNS}[/#61afef] training rounds for [#61afef]{model_name}[/#61afef] {transfer_status}, and with the [#61afef]{optimizer_name}[/#61afef] Optimizer ([#61afef]lr[/#61afef]=[#61afef]{learning_rate}[/#61afef])")
   else:
-    console.print(f"[#e5c07b]![/#e5c07b] Running [#61afef]{RUNS}[/#61afef] training rounds for [#61afef]{model_name}[/#61afef] with [#61afef]{optimizer_name}[/#61afef] ([#61afef]lr[/#61afef]=[#61afef]{learning_rate}[/#61afef])")
+    console.print(f"[#e5c07b]![/#e5c07b] Running [#61afef]{RUNS}[/#61afef] training rounds for [#61afef]{model_name}[/#61afef] with the [#61afef]{cnn_activation_function}[/#61afef] activation function, and with the [#61afef]{optimizer_name}[/#61afef] Optimizer ([#61afef]lr[/#61afef]=[#61afef]{learning_rate}[/#61afef])")
   for run in tqdm(range(RUNS), desc="Runs", position=0, leave=False):
     set_seed(run)
     
@@ -395,48 +406,52 @@ def train_baseline(model_name, pca_components):
   console.print(f"[#e5c07b]![/#e5c07b] Std deviation: \t± {std_acc:.2f}")
 
 model_type = inquirer.select(
-  message="Select model type:",
+  message="Select Model Type:",
   choices=["Deep Learning (CNNs)", "ML Baselines"],
 ).execute()
 
 if model_type == "Deep Learning (CNNs)":
   run_all = inquirer.confirm(
-    message="Run all models?",
+    message="Run All Models?",
     default=False
   ).execute()
   
   if not run_all:
     model_choice = inquirer.select(
-      message="Select a CNN architecture:",
+      message="Select a CNN Architecture:",
       choices=list(cnn_registry.keys()),
     ).execute()
   
   if run_all or model_choice != "Custom CNN":
     use_transfer_learning = inquirer.confirm(
-      message="Use transfer learning (pretrained ImageNet weights)?",
+      message="Use Transfer Learning (Pretrained ImageNet Weights)?",
       default=True
     ).execute()
-  else:
-    use_transfer_learning = False
+    
+  if run_all or model_choice == "Custom CNN":
+    cnn_activation_function = inquirer.select(
+      message="Select Activation Function for the Custom CNN:",
+      choices=activation_function_registry.keys()
+    ).execute()
   
   optimizer_choice = inquirer.select(
-    message="Select an optimizer:",
+    message="Select an Optimizer:",
     choices=["Adam", "SGD", "AdamW", "RMSprop"],
   ).execute()
   
   learning_rate = float(inquirer.text(
-    message="Select learning rate:",
+    message="Select Learning Rate:",
     default="0.0005"
   ).execute())
   
   if run_all:
     for model_name in tqdm(cnn_registry.keys(), desc="models", leave=False):
-      train_cnn(model_name, optimizer_choice, learning_rate, use_transfer_learning)
+      train_cnn(model_name, optimizer_choice, learning_rate, use_transfer_learning = use_transfer_learning, cnn_activation_function = cnn_activation_function)
   else:
-    train_cnn(model_choice, optimizer_choice, learning_rate, use_transfer_learning)
+    train_cnn(model_choice, optimizer_choice, learning_rate, use_transfer_learning = use_transfer_learning, cnn_activation_function = cnn_activation_function)
 else:
   model_choice = inquirer.select(
-    message="Select a baseline model:",
+    message="Select a Baseline Model:",
     choices=list(baseline_registry.keys()),
   ).execute()
 

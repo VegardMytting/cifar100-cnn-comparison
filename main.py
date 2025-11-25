@@ -400,18 +400,18 @@ model_type = inquirer.select(
 ).execute()
 
 if model_type == "Deep Learning (CNNs)":
-  sleep = inquirer.confirm(
+  run_all = inquirer.confirm(
     message="Run all models?",
     default=False
   ).execute()
   
-  if not sleep:
+  if not run_all:
     model_choice = inquirer.select(
       message="Select a CNN architecture:",
       choices=list(cnn_registry.keys()),
     ).execute()
   
-  if sleep or model_choice != "Custom CNN":
+  if run_all or model_choice != "Custom CNN":
     use_transfer_learning = inquirer.confirm(
       message="Use transfer learning (pretrained ImageNet weights)?",
       default=True
@@ -429,7 +429,7 @@ if model_type == "Deep Learning (CNNs)":
     default="0.0005"
   ).execute())
   
-  if sleep:
+  if run_all:
     for model_name in tqdm(cnn_registry.keys(), desc="models", leave=False):
       train_cnn(model_name, optimizer_choice, learning_rate, use_transfer_learning)
   else:

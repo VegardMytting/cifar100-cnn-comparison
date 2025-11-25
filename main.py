@@ -19,8 +19,15 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-EPOCHS = 50
-RUNS = 3
+EPOCHS = int(inquirer.text(
+  message="Select number of Epochs:",
+  default="50"
+).execute())
+
+RUNS = int(inquirer.text(
+  message="Select number of Runs::",
+  default="3"
+).execute())
 
 console = Console()
 
@@ -153,11 +160,11 @@ def densenet121(use_pretrained_weights: bool = True):
 cnn_registry = {
   "Custom CNN": custom_cnn,
   "ResNet18": resnet18,
-  "ResNet34": resnet34,
+  # "ResNet34": resnet34,
   "ResNet50": resnet50,
   "ResNeXt50-32x4d": resnext50,
   "EfficientNet-B0": efficientnetb0,
-  "EfficientNet-B2": efficientnet_b2,
+  # "EfficientNet-B2": efficientnet_b2,
   "MobileNetV3-Large": mobilenetv3_large,
   "ShuffleNetV2-1.0": shufflenetv2,
   "ConvNeXt-Tiny": convnext_tiny,
@@ -236,7 +243,6 @@ def get_transforms(mode):
     raise ValueError(f"Unknown preprocessing mode: {mode}")
   
   return transform_train, transform_test
-
 
 def init_data(mode="Augmentation & Normalize"):
   transform_train, transform_test = get_transforms(mode)
@@ -381,7 +387,8 @@ def train_baseline(model_name, pca_components):
   mean_acc = statistics.mean(accuracies)
   std_acc = statistics.stdev(accuracies)
   
-  console.print(f"\n[#e5c07b]![/#e5c07b] Accuracies: \t\t{accuracies}")
+  console.print(f"\n[#e5c07b]![/#e5c07b] Model Name: \t{model_name}")
+  console.print(f"[#e5c07b]![/#e5c07b] Accuracies: \t\t{accuracies}")
   console.print(f"[#e5c07b]![/#e5c07b] Mean accuracy: \t{mean_acc:.2f} %")
   console.print(f"[#e5c07b]![/#e5c07b] Std deviation: \t± {std_acc:.2f}")
 
@@ -391,10 +398,16 @@ model_type = inquirer.select(
 ).execute()
 
 if model_type == "Deep Learning (CNNs)":
-  model_choice = inquirer.select(
-    message="Select a CNN architecture:",
-    choices=list(cnn_registry.keys()),
+  sleep = inquirer.confirm(
+    message="Run all models?",
+    default=False
   ).execute()
+  
+  if not sleep:
+    model_choice = inquirer.select(
+      message="Select a CNN architecture:",
+      choices=list(cnn_registry.keys()),
+    ).execute()
   
   if model_choice != "Custom CNN":
     use_transfer_learning = inquirer.confirm(
@@ -414,7 +427,11 @@ if model_type == "Deep Learning (CNNs)":
     default="0.0005"
   ).execute())
   
-  train_cnn(model_choice, optimizer_choice, learning_rate, use_transfer_learning)
+  if sleep:
+    for model_name in tqdm(cnn_registry.keys(), desc="models"):
+      train_cnn(model_name, optimizer_choice, learning_rate, use_transfer_learning)
+  else:
+    train_cnn(model_choice, optimizer_choice, learning_rate, use_transfer_learning)
 else:
   model_choice = inquirer.select(
     message="Select a baseline model:",

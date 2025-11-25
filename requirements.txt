@@ -1,0 +1,7 @@
+InquirerPy
+numpy
+rich
+scikit-learn
+torch
+torchvision
+tqdm

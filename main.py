@@ -284,7 +284,7 @@ def train_cnn(model_name, optimizer_name, learning_rate, use_transfer_learning =
     if model_name != "Custom CNN":
       model = cnn_registry[model_name](use_pretrained_weights=use_transfer_learning).to(device)
     else:
-      model = cnn_registry[model_name]().to(device)
+      model = cnn_registry[model_name](activation_function=cnn_activation_function).to(device)
       
     criterion = nn.CrossEntropyLoss()
       
@@ -427,6 +427,8 @@ if model_type == "Deep Learning (CNNs)":
       message="Use Transfer Learning (Pretrained ImageNet Weights)?",
       default=True
     ).execute()
+    
+  cnn_activation_function = None
     
   if run_all or model_choice == "Custom CNN":
     cnn_activation_function = inquirer.select(

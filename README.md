@@ -4,6 +4,6 @@ To install all required packages, please run the following command in your termi
 
     pip install -r requirements.txt
 
-To run the app, please tun the following command in your terminal:
+To run the app, please run the following command in your terminal:
 
     python main.py
